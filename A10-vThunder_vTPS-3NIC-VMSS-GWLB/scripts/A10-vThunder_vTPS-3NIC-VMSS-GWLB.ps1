@@ -36,7 +36,6 @@ foreach ( $subnet in $vNet.Subnets){
         $splitedIP = $mgmtAddPref.split(".")
         [string]$nextHopNum = [int]$splitedIP[-1].split("/")[0] += 1
         $mgmtNextHop = -join($splitedIP[0], ".", $splitedIP[1], ".", $splitedIP[2], ".", $nextHopNum)
-        Write-Output $mgmtNextHop
         continue
     }
     if ($subnet.name -eq $eth1SubnetName){
@@ -44,7 +43,6 @@ foreach ( $subnet in $vNet.Subnets){
         $splitedIP = $eht1AddPref.split(".")
         [string]$nextHopNum = [int]$splitedIP[-1].split("/")[0] += 1
         $eth1NextHop = -join($splitedIP[0], ".", $splitedIP[1], ".", $splitedIP[2], ".", $nextHopNum)
-        Write-Output $eth1NextHop
     }
 }
 
@@ -684,14 +682,15 @@ function getPublicIP {
 $newPubIPList = ""
 # Get private and public ip address of each vm
 foreach($vm in $vmss) {
+    $vTPSPubIP = " "
     try {
         $vTPSPubIP, $eth1PvtIP, $eth2PvtIP = getPublicIP -vm $vm
     }
     catch {
-           Write-Output "Catch the code"
-           $pscredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $appId, $secureStringPwd
-           Connect-AzAccount -ServicePrincipal -Credential $pscredential -Tenant $tenantId
-           $vTPSPubIP, $eth1PvtIP, $eth2PvtIP = getPublicIP -vm $vm
+        Write-Output "Catch the code"
+        $pscredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $appId, $secureStringPwd
+        Connect-AzAccount -ServicePrincipal -Credential $pscredential -Tenant $tenantId
+        $vTPSPubIP, $eth1PvtIP, $eth2PvtIP = getPublicIP -vm $vm
     }
 
     if($vTPSPubIP -eq "Not Assigned"){
@@ -700,11 +699,11 @@ foreach($vm in $vmss) {
 
     $configStatus = "true"
     if(-Not $vTPSPubIPList.Contains($vTPSPubIP)){
-        Write-Output "Config the vTPS", $vTPSPubIP
+        Write-Output $vTPSPubIP
         $count = 0
         $BaseUrl = -join("https://", $vTPSPubIP, "/axapi/v3")
-        
-        while($count -lt 15){
+               
+		while($count -lt 15){
             $AuthorizationToken = GetAuthToken -BaseUrl $BaseUrl
             if ($null -eq $AuthorizationToken) {
                 start-sleep -s $sleepTime
@@ -714,16 +713,15 @@ foreach($vm in $vmss) {
             }
             else {
                 $responce = InterfaceLif -BaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken
-                Write-Output "InterfaceLif function output" 
-                Write-Output $responce
                 if ($null -eq $responce){
                     start-sleep -s $sleepTime
                     $count += 1
                     $configStatus = "false"
-                    Write-Output "Wating For vTPS Ready State" $count
+                    Write-Output "Got the AuthorizationToken, Wating For vTPS Config State" $count
                     continue
                 }
                 ConfigvTPS -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken
+                $configStatus = "true"
                 Break
             }
         }
