@@ -230,7 +230,7 @@
       "workspaceName":"[concat(parameters('Log Analytics Workspace'), '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
       "workspaceSku":"pergb2018",
       "appInsightsName":"[concat(parameters('App Insights'), '-', substring(uniqueString(resourceGroup().name, deployment().name),0, 6))]",
-      "_artifactsLocation":"https://raw.githubusercontent.com/dlohia-a10/a10-azure-arm-templates/FEATURE/A10-vThunder_vTPS-3NIC-VMSS-GWLB/A10-vThunder_vTPS-3NIC-VMSS-GWLB/A10-vThunder_vTPS-3NIC-VMSS-GWLB.json",
+      "_artifactsLocation":"https://raw.githubusercontent.com/dlohia-a10/a10-azure-arm-templates/main/A10-vThunder_vTPS-3NIC-VMSS-GWLB/A10-vThunder_vTPS-3NIC-VMSS-GWLB.json",
       "vTPSAutoScaleSetting": "[concat('AutoscaleSetting-', substring(uniqueString(resourceGroup().name, deployment().name),0,6))]",
       "location": "[resourceGroup().location]",
       "WebhookExpiryTime": "2023-09-21T19:03:27.494+00:00",
