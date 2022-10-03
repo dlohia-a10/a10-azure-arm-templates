@@ -39,7 +39,7 @@
       },
       "Subnet Management Name":{
          "type":"string",
-         "defaultValue":"vtps-vnet-mgmt-sub1",
+         "defaultValue":"vnet-mgmt-sub1",
          "metadata":{
             "description":"Choose the available subnet name for managing vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
          }
@@ -53,7 +53,7 @@
       },
       "Subnet Data In Name":{
          "type":"string",
-         "defaultValue":"vtps-vnet-data-sub2",
+         "defaultValue":"vnet-data-sub2",
          "metadata":{
             "description":"Choose the available subnet name for data traffic flow inward to vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
          }
@@ -67,7 +67,7 @@
       },
       "Subnet Data Out Name":{
          "type":"string",
-         "defaultValue":"vtps-vnet-data-sub3",
+         "defaultValue":"vnet-data-sub3",
          "metadata":{
             "description":"Choose the available subnet name for data traffic outward from vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
          }
@@ -81,7 +81,7 @@
       },
       "Subnet GWLB Name":{
          "type":"string",
-         "defaultValue":"vtps-vnet-gwlb-sub4",
+         "defaultValue":"vnet-gwlb-sub4",
          "metadata":{
             "description":"Specify the private gateway loadbalancer subnet name which will take traffic from public loadbalacer. ARM template will create a new gateway loadbalancer with specified name along with 6 chars unique id at the end. For eg vtps-gwlab-asd5gh."
          }
