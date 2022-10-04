@@ -32,63 +32,54 @@
       },
       "VNET":{
          "type":"string",
-         "defaultValue":"vnet",
          "metadata":{
             "description":"Choose the avaiable Virtual Network Name where to configure vTPS. This ARM template will not create a new virtual network."
          }
       },
       "Subnet Management Name":{
          "type":"string",
-         "defaultValue":"vnet-mgmt-sub1",
          "metadata":{
             "description":"Choose the available subnet name for managing vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
          }
       },
       "Subnet Management":{
          "type":"string",
-         "defaultValue":"10.0.1.0/24",
          "metadata":{
             "description":"Choose the available subnet prefix for managing vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
          }
       },
       "Subnet Data In Name":{
          "type":"string",
-         "defaultValue":"vnet-data-sub2",
          "metadata":{
             "description":"Choose the available subnet name for data traffic flow inward to vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
          }
       },
       "Subnet Data In":{
          "type":"string",
-         "defaultValue":"10.0.2.0/24",
          "metadata":{
             "description":"Choose the available subnet prefix for data traffic inward to vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
          }
       },
       "Subnet Data Out Name":{
          "type":"string",
-         "defaultValue":"vnet-data-sub3",
          "metadata":{
             "description":"Choose the available subnet name for data traffic outward from vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
          }
       },
       "Subnet Data Out":{
          "type":"string",
-         "defaultValue":"10.0.3.0/24",
          "metadata":{
             "description":"Choose the available subnet prefix for data traffic outward from vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
          }
       },
       "Subnet GWLB Name":{
          "type":"string",
-         "defaultValue":"vnet-gwlb-sub4",
          "metadata":{
             "description":"Specify the private gateway loadbalancer subnet name which will take traffic from public loadbalacer. ARM template will create a new gateway loadbalancer with specified name along with 6 chars unique id at the end. For eg vtps-gwlab-asd5gh."
          }
       },
       "Subnet GWLB":{
          "type":"string",
-         "defaultValue":"10.0.4.0/24",
          "metadata":{
             "description":"Choose the available subnet prefix for gateway loadbalancer traffic which take inward traffic from public loadbalancer and sends to vTPS and this subnet should be available within a selected virtual network. This ARM template will not create a new subnet."
          }
@@ -133,7 +124,7 @@
       },
       "VMSS Email Notification":{
          "type": "string",
-         "defaultValue":"vgautam@a10networks.com,example@a10networks.com",
+         "defaultValue":"example1@a10networks.com,example2@a10networks.com",
          "metadata":{
             "description":"Specify comma delimited emails for VMSS autoscale notifications."
          }
@@ -243,7 +234,7 @@
       "virtualNetworkNewOrExisting": "existing",
       "VmssSinglePlacementGroup": true,
       "Vmss Name": "[concat(parameters('VMSS Name'), '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
-      "Vmss Dns": "[concat(resourceGroup().name, variables('VMSS Name'))]",
+      "Vmss Dns": "[replace(variables('VMSS Name'), '_', '-')]",
       "Automation Account": "[concat(parameters('Automation Account'), '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
       "vTPSUserName": "admin",
       "vTPSPassword": "a10",
@@ -345,7 +336,7 @@
                 ],
                 "loadBalancingRules": [
                     {
-                        "name": "rulePort80",
+                        "name": "ruleToTPS",
                         "properties": {
                             "frontendIPConfiguration": {
                                 "id": "[variables('lbFrontendIPConfigID')]"
