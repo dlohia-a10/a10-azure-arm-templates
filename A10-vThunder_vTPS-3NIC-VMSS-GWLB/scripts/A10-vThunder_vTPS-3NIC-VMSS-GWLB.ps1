@@ -22,6 +22,43 @@ $eth1PvtIP = ""
 $eth2PvtIP = ""
 $sleepTime = 60
 
+function getLogAnalyticsInfo {
+    param (
+        $resourceGroupName,
+        $vmssName
+    )
+    # get all workspaces present in same resource group
+    $workspaces = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName
+
+    # vm name suffix
+    $vmSuffix = $vmssName.Split('-')[-1]
+
+    # initialize workspace name
+    $workspaceName = $null
+
+    # get workspace name
+    foreach ($workspace in $workspaces){
+        $wSuffix = $workspace.Name.Split('-')[-1]
+        if ($wSuffix -eq $vmSuffix){
+            $workspaceName = $workspace.Name
+            break
+        }
+    }
+
+    if ($null -eq $workspaceName) {
+        Write-Output "Log Analytics Workspace not found in resource group"
+        return
+    }
+
+    # get log analytics workspace id
+    $workspaceID = Get-AzOperationalInsightsWorkspace -Name $workspaceName -ResourceGroupName $resourceGroupName
+
+    # get log analytics workspace primary key
+    $key = Get-AzOperationalInsightsWorkspaceSharedKey -Name $workspaceName -ResourceGroupName $resourceGroupName
+
+    return $workspaceID.CustomerId, $key.PrimarySharedKey
+}
+
 function GetAuthToken {
     <#
         .PARAMETER BaseUrl
@@ -50,7 +87,7 @@ function GetAuthToken {
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
     # Invoke Auth url
-    $Response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $Response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
     # fetch Authorization token from response
     $AuthorizationToken = $Response.authresponse.signature
     return $AuthorizationToken
@@ -95,7 +132,7 @@ function InterfaceEthernet {
     `n}"
     
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $responseeth1 = Invoke-RestMethod -Uri $Urleth1 -Method 'POST' -Headers $headerseth1 -Body $bodyeth1
+    $responseeth1 = Invoke-RestMethod -SkipCertificateCheck -Uri $Urleth1 -Method 'POST' -Headers $headerseth1 -Body $bodyeth1
     
     $Urleth2 = -join($BaseUrl, "/interface/ethernet/2")
     $headerseth2 = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
@@ -121,7 +158,7 @@ function InterfaceEthernet {
     `n}"
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response2 = Invoke-RestMethod -Uri $Urleth2 -Method 'POST' -Headers $headerseth2 -Body $bodyeth2
+    $response2 = Invoke-RestMethod -SkipCertificateCheck -Uri $Urleth2 -Method 'POST' -Headers $headerseth2 -Body $bodyeth2
 
 }
 
@@ -174,7 +211,7 @@ function InterfaceLif {
     `n}"
     
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
 
 }
 
@@ -206,7 +243,7 @@ function DDOSHealth {
     `n}"
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
 
 }
 
@@ -254,7 +291,7 @@ function DDOSInterfaceIP {
         `n}"
     
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
 
 }
 
@@ -285,7 +322,7 @@ function DDOSProtection {
     `n}"
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
     
 }
 
@@ -339,7 +376,7 @@ function DDOSDstZone {
     `n"
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
 
 }
 
@@ -430,7 +467,7 @@ function OverlayTunnelVTEP {
     `n"
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
     
 }
 
@@ -463,7 +500,7 @@ function DNSConfig {
     `n"
     
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
     return $response
 }
 
@@ -534,7 +571,7 @@ function IPRouteConfig {
     `n"
     
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
     
 }
 
@@ -550,7 +587,7 @@ function WriteMemory {
         AXAPI: /axapi/v3//write/memory
     #>
     param (
-        $BaseUrl,
+        $vthunderBaseUrl,
         $AuthorizationToken
     )
     $Url = -join($BaseUrl, "/write/memory")
@@ -560,7 +597,7 @@ function WriteMemory {
     $headers.Add("Authorization", -join("A10 ", $AuthorizationToken))
     
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers
+    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers
 
 }
 
@@ -575,7 +612,7 @@ function Reboot {
     AXAPI: /axapi/v3/reboot
     #>
     param (
-        $BaseUrl,
+        $vthunderBaseUrl,
         $AuthorizationToken
     )
     
@@ -585,7 +622,7 @@ function Reboot {
     $headers.Add("Authorization", -join("A10 ", $AuthorizationToken))
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers
+    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers
     Write-Output "Reboot Done"
 }
 
@@ -621,10 +658,6 @@ function ConfigvTPS {
 
     IPRouteConfig -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken -mgmtNextHop $mgmtNextHop -eth1NextHop $eth1NextHop -pubLBPubIP $pubLBPubIP
 
-    WriteMemory -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken
-
-    Reboot -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken
-
     return "Updated server information"
 }
 
@@ -655,8 +688,8 @@ function InsertLogAnalyticsInfo {
     param (
         $vthunderBaseUrl,
         $AuthorizationToken,
-        $vmssName,
-        $vmName,
+        $customerId,
+        $primarySharedKey,
         $vmId,
         $resourceGroupName,
         $publicIp
@@ -665,35 +698,6 @@ function InsertLogAnalyticsInfo {
     $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
     $headers.Add("Content-Type", "application/json")
     $headers.Add("Authorization", -join("A10 ", $AuthorizationToken))
-    
-    # get all workspaces present in same resource group
-    $workspaces = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName
-
-    # vm name suffix
-    $vmSuffix = $vmssName.Split('-')[-1]
-
-    # initialize workspace name
-    $workspaceName = $null
-
-    # get workspace name
-    foreach ($workspace in $workspaces){
-        $wSuffix = $workspace.Name.Split('-')[-1]
-        if ($wSuffix -eq $vmSuffix){
-            $workspaceName = $workspace.Name
-            break
-        }
-    }
-
-    if ($null -eq $workspaceName) {
-        Write-Output "Log Analytics Workspace not found in resource group"
-        return
-    }
-
-    # get log analytics workspace id
-    $workspaceID = Get-AzOperationalInsightsWorkspace -Name $workspaceName -ResourceGroupName $resourceGroupName
-
-    # get log analytics workspace primary key
-    $key = Get-AzOperationalInsightsWorkspaceSharedKey -Name $workspaceName -ResourceGroupName $resourceGroupName
 
     # creating array list
     $cloudProviderList = New-Object System.Collections.ArrayList
@@ -702,15 +706,15 @@ function InsertLogAnalyticsInfo {
     $resourceInfo = @{
         "cloud-provider" = "azure"
               "log-analytics" = 1
-              "workspace-id" = $workspaceID.CustomerId
-              "primary-key" = $key.PrimarySharedKey
+              "workspace-id" = $customerId
+              "primary-key" = $primarySharedKey
               "source-resource-id" = $vmId
               "source-ip" = $publicIp
               "action" = "enable"
     }
 
     # append resource info object into list
-    $cloudProviderList.Add($resourceInfo)
+    [void]$cloudProviderList.Add($resourceInfo)
 
     $body = @{
         "cloud-services" = @{
@@ -730,9 +734,15 @@ function InsertLogAnalyticsInfo {
 #Get list of vm from vmss
 $vmss = Get-AzVmssVM -ResourceGroupName $resourceGroupName -VMScaleSetName $vTPSScaleSetName
 
-$tempPubIP = ""
-$tempEth1PvtIP = ""
-$tempEth2PvtIP = ""
+# get log analytics workspace information
+$customerId, $primarySharedKey = getLogAnalyticsInfo -resourceGroupName $resourceGroupName -vmssName $vTPSScaleSetName
+
+$pubIpList = New-Object System.Collections.ArrayList
+$eth1PvtIPList = New-Object System.Collections.ArrayList
+$eth2PvtIPList = New-Object System.Collections.ArrayList
+$vmNameList = New-Object System.Collections.ArrayList
+$vmIDList = New-Object System.Collections.ArrayList
+
 
 # Get private and public ip address of each vm
 foreach($vm in $vmss) {
@@ -758,18 +768,12 @@ foreach($vm in $vmss) {
         continue
     }
 
-    # get and save log analytics information in vthunder instance
-    InsertLogAnalyticsInfo -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -vmName $vm.Name -vmId $vm.Id -resourceGroupName $resourceGroupName -publicIp $vTPSPubIP -vmssName $vTPSScaleSetName
-    
-    $tempPubIP = -join($tempPubIP, $vTPSPubIP, " ")
-    $tempEth1PvtIP = -join($tempEth1PvtIP, $eth1PvtIP, " ")
-    $tempEth2PvtIP = -join($tempEth2PvtIP, $eth2PvtIP, " ")
-
+    [void]$pubIpList.Add($vTPSPubIP)
+    [void]$eth1PvtIPList.Add($eth1PvtIP)
+    [void]$eth2PvtIPList.Add($eth2PvtIP)
+    [void]$vmNameList.Add($vm.Name)
+    [void]$vmIDList.Add($vm.Id)
 }
-
-$pubIpList = $tempPubIP.Split(" ")
-$eth1PvtIPList = $tempEth1PvtIP.Split(" ")
-$eth2PvtIPList = $tempEth2PvtIP.Split(" ")
 
 $gwlb = Get-AzLoadBalancer -Name $gwLBName -ResourceGroupName $resourceGroupName
 $gwlbPvtIP = $gwlb.FrontendIpConfigurations[0].PrivateIpAddress
@@ -777,11 +781,13 @@ $gwlbPvtIP = $gwlb.FrontendIpConfigurations[0].PrivateIpAddress
 $mgmtNextHop, $eth1NextHop = getNextHop
 
 $newPubIPList = ""
-for($i = 0; $i -lt $pubIpList.Length; $i++){
+for($i = 0; $i -lt $pubIpList.Count; $i++){
 
     $vTPSPubIP = $pubIpList[$i]
     $eth1PvtIP = $eth1PvtIPList[$i]
     $eth2PvtIP = $eth2PvtIPList[$i]
+    $vmName = $vmNameList[$i]
+    $vmID = $vmIDList[$i]
     
     if ($vTPSPubIP -eq ""){
         continue
@@ -811,6 +817,12 @@ for($i = 0; $i -lt $pubIpList.Length; $i++){
                     continue
                 }
                 ConfigvTPS -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -mgmtNextHop $mgmtNextHop -eth1NextHop $eth1NextHop -gwlbPvtIP $gwlbPvtIP -pubLBPubIP $pubLBPubIP
+                # get and save log analytics information in vthunder instance
+                InsertLogAnalyticsInfo -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -vmName $vmName -vmId $vmID -resourceGroupName $resourceGroupName -publicIp $vTPSPubIP -vmssName $vTPSScaleSetName
+                # save configurations
+                WriteMemory -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken
+                # reboot vtps instance
+                Reboot -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken
                 $configStatus = "true"
                 Break
             }
