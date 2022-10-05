@@ -87,7 +87,7 @@ function GetAuthToken {
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
     # Invoke Auth url
-    $Response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $Response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
     # fetch Authorization token from response
     $AuthorizationToken = $Response.authresponse.signature
     return $AuthorizationToken
@@ -132,7 +132,7 @@ function InterfaceEthernet {
     `n}"
     
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $responseeth1 = Invoke-RestMethod -SkipCertificateCheck -Uri $Urleth1 -Method 'POST' -Headers $headerseth1 -Body $bodyeth1
+    $responseeth1 = Invoke-RestMethod -Uri $Urleth1 -Method 'POST' -Headers $headerseth1 -Body $bodyeth1
     
     $Urleth2 = -join($BaseUrl, "/interface/ethernet/2")
     $headerseth2 = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
@@ -158,7 +158,7 @@ function InterfaceEthernet {
     `n}"
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response2 = Invoke-RestMethod -SkipCertificateCheck -Uri $Urleth2 -Method 'POST' -Headers $headerseth2 -Body $bodyeth2
+    $response2 = Invoke-RestMethod -Uri $Urleth2 -Method 'POST' -Headers $headerseth2 -Body $bodyeth2
 
 }
 
@@ -211,7 +211,7 @@ function InterfaceLif {
     `n}"
     
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
 
 }
 
@@ -243,7 +243,7 @@ function DDOSHealth {
     `n}"
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
 
 }
 
@@ -291,7 +291,7 @@ function DDOSInterfaceIP {
         `n}"
     
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
 
 }
 
@@ -322,7 +322,7 @@ function DDOSProtection {
     `n}"
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
     
 }
 
@@ -376,7 +376,7 @@ function DDOSDstZone {
     `n"
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
 
 }
 
@@ -467,7 +467,7 @@ function OverlayTunnelVTEP {
     `n"
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
     
 }
 
@@ -500,7 +500,7 @@ function DNSConfig {
     `n"
     
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
     return $response
 }
 
@@ -571,7 +571,7 @@ function IPRouteConfig {
     `n"
     
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
     
 }
 
@@ -597,7 +597,7 @@ function WriteMemory {
     $headers.Add("Authorization", -join("A10 ", $AuthorizationToken))
     
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers
+    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers
 
 }
 
@@ -622,7 +622,7 @@ function Reboot {
     $headers.Add("Authorization", -join("A10 ", $AuthorizationToken))
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $Url -Method 'POST' -Headers $headers
+    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers
     Write-Output "Reboot Done"
 }
 
@@ -723,7 +723,8 @@ function InsertLogAnalyticsInfo {
       }
     
     $body = $body | ConvertTo-Json -Depth 6
-    $response = Invoke-RestMethod -SkipCertificateCheck -Uri $url -Method 'POST' -Headers $headers -Body $body
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+    $response = Invoke-RestMethod -Uri $url -Method 'POST' -Headers $headers -Body $body
     if ($null -eq $response) {
         Write-Error "Failed to insert log analytics information into vTPS instance $vm"
     } else {
