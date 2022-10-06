@@ -353,6 +353,7 @@ function DDOSDstZone {
     `n    {
     `n      `"zone-name`":`"z1`",
     `n      `"operational-mode`":`"monitor`",
+    `n      `"log-enable`":1,
     `n      `"ip`": [
     `n        {
     `n          `"ip-addr`":`"$pubLBPubIP`"
