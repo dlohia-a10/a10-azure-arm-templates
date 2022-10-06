@@ -818,8 +818,8 @@ for($i = 0; $i -lt $pubIpList.Count; $i++){
                     continue
                 }
                 ConfigvTPS -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -mgmtNextHop $mgmtNextHop -eth1NextHop $eth1NextHop -gwlbPvtIP $gwlbPvtIP -pubLBPubIP $pubLBPubIP
-                # get and save log analytics information in vthunder instance
-                InsertLogAnalyticsInfo -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -vmName $vmName -vmId $vmID -resourceGroupName $resourceGroupName -publicIp $vTPSPubIP -vmssName $vTPSScaleSetName
+                # # get and save log analytics information in vthunder instance
+                # InsertLogAnalyticsInfo -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -vmName $vmName -vmId $vmID -resourceGroupName $resourceGroupName -publicIp $vTPSPubIP -vmssName $vTPSScaleSetName
                 # save configurations
                 WriteMemory -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken
                 # reboot vtps instance
