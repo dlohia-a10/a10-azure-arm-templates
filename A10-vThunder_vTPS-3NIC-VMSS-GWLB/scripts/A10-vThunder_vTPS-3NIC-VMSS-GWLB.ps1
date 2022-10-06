@@ -786,9 +786,9 @@ function InsertLogAnalyticsInfo {
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
     $response = Invoke-RestMethod -Uri $url -Method 'POST' -Headers $headers -Body $body
     if ($null -eq $response) {
-        Write-Error "Failed to insert log analytics information into vTPS instance $vm"
+        Write-Error "Failed to insert log analytics information into vTPS instance $publicIp"
     } else {
-        Write-Output "Inserted log analytics information into vTPS instance $vm"
+        Write-Output "Inserted log analytics information into vTPS instance $publicIp"
     }
 }
 
@@ -836,6 +836,11 @@ foreach($vm in $vmss) {
     [void]$vmIDList.Add($vm.Id)
 }
 
+# check if all list lengths are equal
+if ($pubIpList.Count -ne $eth1PvtIPList.Count -or $pubIpList.Count -ne $eth2PvtIPList.Count -or $pubIpList.Count -ne $vmNameList.Count -or $pubIpList.Count -ne $vmIDList.Count) {
+    Write-Error "Failed to fetch vtps instances public ip, data interfaces, name and resource id information" -ErrorAction Stop
+}
+
 $gwlb = Get-AzLoadBalancer -Name $gwLBName -ResourceGroupName $resourceGroupName
 $gwlbPvtIP = $gwlb.FrontendIpConfigurations[0].PrivateIpAddress
 
@@ -879,7 +884,7 @@ for($i = 0; $i -lt $pubIpList.Count; $i++){
                 }
                 ConfigvTPS -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -mgmtNextHop $mgmtNextHop -eth1NextHop $eth1NextHop -gwlbPvtIP $gwlbPvtIP -pubLBPubIP $pubLBPubIP
                 # # get and save log analytics information in vthunder instance
-                # InsertLogAnalyticsInfo -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -vmName $vmName -vmId $vmID -resourceGroupName $resourceGroupName -publicIp $vTPSPubIP -vmssName $vTPSScaleSetName
+                # InsertLogAnalyticsInfo -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -vmName $vmName -vmId $vmID -resourceGroupName $resourceGroupName -publicIp $vTPSPubIP -vmssName $vTPSScaleSetName -customerId $customerId -primarySharedKey $primarySharedKey
                 # save configurations
                 WriteMemory -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken
                 # reboot vtps instance
