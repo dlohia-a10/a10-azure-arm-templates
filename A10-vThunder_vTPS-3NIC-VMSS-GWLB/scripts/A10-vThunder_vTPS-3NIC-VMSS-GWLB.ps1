@@ -1,4 +1,4 @@
-start-sleep -s 200
+start-sleep -s 300
 $appId = Get-AutomationVariable -Name appId
 $secret = Get-AutomationVariable -Name secret
 $tenantId = Get-AutomationVariable -Name tenantId
@@ -450,7 +450,12 @@ function OverlayTunnelVTEP {
     `n      },
     `n      `"remote-ip-address-list`": [
     `n        {
-    `n          `"ip-address`":`"$gwlbPvtIP`"
+    `n          `"ip-address`":`"$gwlbPvtIP`",
+    `n          `"vni-list`": [
+    `n            {
+    `n              `"segment`":800
+    `n            }
+    `n          ]
     `n        }
     `n      ],
     `n      `"host-list`": [
@@ -575,6 +580,57 @@ function IPRouteConfig {
     
 }
 
+function LifRoute {
+    param (
+        $BaseUrl,
+        $AuthorizationToken
+    )
+    
+    $Url = -join($BaseUrl, "/ip/route/source/lif")
+    $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+    $headers.Add("Content-Type", "application/json")
+    $headers.Add("Authorization", -join("A10 ", $AuthorizationToken))
+
+    $body = "{
+    `n  `"lif-list`": [
+    `n    {
+    `n      `"ifname`":`"clean`",
+    `n      `"nexthop-ip`":`"172.16.1.2`"
+    `n    },
+    `n    {
+    `n      `"ifname`":`"dirty`",
+    `n      `"nexthop-ip`":`"172.16.2.2`"
+    `n    }
+    `n  ]
+    `n}"
+
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    
+}
+
+function SystemDDOS {
+    param (
+        $BaseUrl,
+        $AuthorizationToken
+    )
+    
+    $Url = -join($BaseUrl, "/system")
+    $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+    $headers.Add("Content-Type", "application/json")
+    $headers.Add("Authorization", -join("A10 ", $AuthorizationToken))
+
+    $body = "{
+    `n  `"system`": {
+    `n    `"ddos-attack`":1,
+    `n    `"ddos-log`":1
+    `n  }
+    `n}"
+
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
+
+}
 function WriteMemory {
     <#
         .PARAMETER BaseUrl
@@ -658,7 +714,11 @@ function ConfigvTPS {
 
     IPRouteConfig -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken -mgmtNextHop $mgmtNextHop -eth1NextHop $eth1NextHop -pubLBPubIP $pubLBPubIP
 
-    return "Updated server information"
+    SystemDDOS -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken
+
+    # LifRoute -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken
+
+    return "vTPS Configuration Applied"
 }
 
 function getNextHop {
@@ -726,9 +786,9 @@ function InsertLogAnalyticsInfo {
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
     $response = Invoke-RestMethod -Uri $url -Method 'POST' -Headers $headers -Body $body
     if ($null -eq $response) {
-        Write-Error "Failed to insert log analytics information into vTPS instance $vm"
+        Write-Error "Failed to insert log analytics information into vTPS instance $publicIp"
     } else {
-        Write-Output "Inserted log analytics information into vTPS instance $vm"
+        Write-Output "Inserted log analytics information into vTPS instance $publicIp"
     }
 }
 
@@ -776,6 +836,11 @@ foreach($vm in $vmss) {
     [void]$vmIDList.Add($vm.Id)
 }
 
+# check if all list lengths are equal
+if ($pubIpList.Count -ne $eth1PvtIPList.Count -or $pubIpList.Count -ne $eth2PvtIPList.Count -or $pubIpList.Count -ne $vmNameList.Count -or $pubIpList.Count -ne $vmIDList.Count) {
+    Write-Error "Failed to fetch vtps instances public ip, data interfaces, name and resource id information" -ErrorAction Stop
+}
+
 $gwlb = Get-AzLoadBalancer -Name $gwLBName -ResourceGroupName $resourceGroupName
 $gwlbPvtIP = $gwlb.FrontendIpConfigurations[0].PrivateIpAddress
 
@@ -818,8 +883,8 @@ for($i = 0; $i -lt $pubIpList.Count; $i++){
                     continue
                 }
                 ConfigvTPS -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -mgmtNextHop $mgmtNextHop -eth1NextHop $eth1NextHop -gwlbPvtIP $gwlbPvtIP -pubLBPubIP $pubLBPubIP
-                # get and save log analytics information in vthunder instance
-                InsertLogAnalyticsInfo -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -vmName $vmName -vmId $vmID -resourceGroupName $resourceGroupName -publicIp $vTPSPubIP -vmssName $vTPSScaleSetName
+                # # get and save log analytics information in vthunder instance
+                # InsertLogAnalyticsInfo -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -vmName $vmName -vmId $vmID -resourceGroupName $resourceGroupName -publicIp $vTPSPubIP -vmssName $vTPSScaleSetName -customerId $customerId -primarySharedKey $primarySharedKey
                 # save configurations
                 WriteMemory -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken
                 # reboot vtps instance

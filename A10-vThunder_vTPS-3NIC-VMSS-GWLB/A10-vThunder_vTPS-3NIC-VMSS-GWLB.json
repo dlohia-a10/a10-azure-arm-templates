@@ -155,7 +155,7 @@
       "Public LB Frontend IP": {
          "type": "string",
          "metadata": {
-            "description": "Choose Public facing load balancer frontend ip address which will send traffic to private gateway load balancer and private gateway load balancer will send traffic to vTPS instances."
+            "description": "Choose Public facing load balancer frontend ip address which will send traffic to private gateway load balancer and private gateway load balancer will send traffic to vTPS instances. Can not be wild card entry or net mask entry."
          }
       },
       "Log Analytics Workspace":{
@@ -239,7 +239,7 @@
       "vTPSUserName": "admin",
       "vTPSPassword": "a10",
       "VMSS Email Notification": "[split(replace(parameters('VMSS Email Notification'), ' ', ''), ',')]",
-      "natGatewayName": "[concat(parameters('VNET'), '-', 'NATGateway')]",
+      "natGatewayName": "[concat('vtps-nat-gateway', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
       "publicIPNATName": "[concat('NATPubIP', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
       "publicIPPrefixName": "[concat('NATPubIPPrefix', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]"
    },
