@@ -450,7 +450,12 @@ function OverlayTunnelVTEP {
     `n      },
     `n      `"remote-ip-address-list`": [
     `n        {
-    `n          `"ip-address`":`"$gwlbPvtIP`"
+    `n          `"ip-address`":`"$gwlbPvtIP`",
+    `n          `"vni-list`": [
+    `n            {
+    `n              `"segment`":800
+    `n            }
+    `n          ]
     `n        }
     `n      ],
     `n      `"host-list`": [
@@ -575,6 +580,57 @@ function IPRouteConfig {
     
 }
 
+function LifRoute {
+    param (
+        $BaseUrl,
+        $AuthorizationToken
+    )
+    
+    $Url = -join($BaseUrl, "/ip/route/source/lif")
+    $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+    $headers.Add("Content-Type", "application/json")
+    $headers.Add("Authorization", -join("A10 ", $AuthorizationToken))
+
+    $body = "{
+    `n  `"lif-list`": [
+    `n    {
+    `n      `"ifname`":`"clean`",
+    `n      `"nexthop-ip`":`"172.16.1.2`"
+    `n    },
+    `n    {
+    `n      `"ifname`":`"dirty`",
+    `n      `"nexthop-ip`":`"172.16.2.2`"
+    `n    }
+    `n  ]
+    `n}"
+
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
+    
+}
+
+function SystemDDOS {
+    param (
+        $BaseUrl,
+        $AuthorizationToken
+    )
+    
+    $Url = -join($BaseUrl, "/system")
+    $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+    $headers.Add("Content-Type", "application/json")
+    $headers.Add("Authorization", -join("A10 ", $AuthorizationToken))
+
+    $body = "{
+    `n  `"system`": {
+    `n    `"ddos-attack`":1,
+    `n    `"ddos-log`":1
+    `n  }
+    `n}"
+
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+    $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
+
+}
 function WriteMemory {
     <#
         .PARAMETER BaseUrl
@@ -658,7 +714,11 @@ function ConfigvTPS {
 
     IPRouteConfig -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken -mgmtNextHop $mgmtNextHop -eth1NextHop $eth1NextHop -pubLBPubIP $pubLBPubIP
 
-    return "Updated server information"
+    SystemDDOS -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken
+
+    # LifRoute -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken
+
+    return "vTPS Configuration Applied"
 }
 
 function getNextHop {
