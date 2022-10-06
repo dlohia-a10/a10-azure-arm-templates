@@ -1,4 +1,4 @@
-start-sleep -s 200
+start-sleep -s 300
 $appId = Get-AutomationVariable -Name appId
 $secret = Get-AutomationVariable -Name secret
 $tenantId = Get-AutomationVariable -Name tenantId
