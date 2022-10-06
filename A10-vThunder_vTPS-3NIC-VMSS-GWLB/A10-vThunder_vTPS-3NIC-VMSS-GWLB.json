@@ -238,7 +238,10 @@
       "Automation Account": "[concat(parameters('Automation Account'), '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
       "vTPSUserName": "admin",
       "vTPSPassword": "a10",
-      "VMSS Email Notification": "[split(replace(parameters('VMSS Email Notification'), ' ', ''), ',')]"
+      "VMSS Email Notification": "[split(replace(parameters('VMSS Email Notification'), ' ', ''), ',')]",
+      "natGatewayName": "[concat(parameters('VNET'), '-', 'NATGateway')]",
+      "publicIPNATName": "[concat('NATPubIP', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
+      "publicIPPrefixName": "[concat('NATPubIPPrefix', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]"
    },
    "resources":[
       {
@@ -476,6 +479,59 @@
           "dependsOn":[
             "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupMgmtIntName'))]",
             "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupDataIntName'))]"
+         ]
+      },
+      {
+         "type": "Microsoft.Network/publicIPAddresses",
+         "apiVersion": "2021-05-01",
+         "name": "[variables('publicIPNATName')]",
+         "location": "[variables('location')]",
+         "sku": {
+            "name": "Standard"
+         },
+         "properties": {
+         "publicIPAddressVersion": "IPv4",
+         "publicIPAllocationMethod": "Static",
+         "idleTimeoutInMinutes": 4
+         }
+      },
+      {
+         "type": "Microsoft.Network/publicIPPrefixes",
+         "apiVersion": "2021-05-01",
+         "name": "[variables('publicIPPrefixName')]",
+         "location": "[variables('location')]",
+         "sku": {
+            "name": "Standard"
+         },
+         "properties": {
+         "prefixLength": 31,
+         "publicIPAddressVersion": "IPv4"
+         }
+      },
+      {
+         "type": "Microsoft.Network/natGateways",
+         "apiVersion": "2021-05-01",
+         "name": "[variables('natGatewayName')]",
+         "location": "[variables('location')]",
+         "sku": {
+            "name": "Standard"
+         },
+         "properties": {
+            "idleTimeoutInMinutes": 4,
+            "publicIpAddresses": [
+               {
+                  "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPNATName'))]"
+               }
+            ],
+            "publicIpPrefixes": [
+               {
+                  "id": "[resourceId('Microsoft.Network/publicIPPrefixes', variables('publicIPPrefixName'))]"
+               }
+            ]
+         },
+         "dependsOn": [
+            "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPNATName'))]",
+            "[resourceId('Microsoft.Network/publicIPPrefixes', variables('publicIPPrefixName'))]"
          ]
       },
       {
