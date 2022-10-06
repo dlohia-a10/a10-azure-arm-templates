@@ -155,7 +155,7 @@
       "Public LB Frontend IP": {
          "type": "string",
          "metadata": {
-            "description": "Choose Public facing load balancer frontend ip address which will send traffic to private gateway load balancer and private gateway load balancer will send traffic to vTPS instances."
+            "description": "Choose Public facing load balancer frontend ip address which will send traffic to private gateway load balancer and private gateway load balancer will send traffic to vTPS instances. Can not be wild card entry or net mask entry."
          }
       },
       "Log Analytics Workspace":{
@@ -221,7 +221,7 @@
       "workspaceName":"[concat(parameters('Log Analytics Workspace'), '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
       "workspaceSku":"pergb2018",
       "appInsightsName":"[concat(parameters('App Insights'), '-', substring(uniqueString(resourceGroup().name, deployment().name),0, 6))]",
-      "_artifactsLocation":"https://raw.githubusercontent.com/dlohia-a10/a10-azure-arm-templates/main/A10-vThunder_vTPS-3NIC-VMSS-GWLB/A10-vThunder_vTPS-3NIC-VMSS-GWLB.json",
+      "_artifactsLocation":"https://raw.githubusercontent.com/dlohia-a10/a10-azure-arm-templates/FEATURE/A10-vThunder_vTPS-3NIC-VMSS-GWLB/A10-vThunder_vTPS-3NIC-VMSS-GWLB/A10-vThunder_vTPS-3NIC-VMSS-GWLB.json",
       "vTPSAutoScaleSetting": "[concat('AutoscaleSetting-', substring(uniqueString(resourceGroup().name, deployment().name),0,6))]",
       "location": "[resourceGroup().location]",
       "WebhookExpiryTime": "2023-09-21T19:03:27.494+00:00",
@@ -239,7 +239,7 @@
       "vTPSUserName": "admin",
       "vTPSPassword": "a10",
       "VMSS Email Notification": "[split(replace(parameters('VMSS Email Notification'), ' ', ''), ',')]",
-      "natGatewayName": "[concat(parameters('VNET'), '-', 'NATGateway')]",
+      "natGatewayName": "[concat('vtps-nat-gateway', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
       "publicIPNATName": "[concat('NATPubIP', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
       "publicIPPrefixName": "[concat('NATPubIPPrefix', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]"
    },
