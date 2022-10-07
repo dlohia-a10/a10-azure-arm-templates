@@ -4,7 +4,7 @@
    "parameters":{
       "Image":{
          "type":"string",
-         "defaultValue":"vthunder-tps-byol",
+         "defaultValue":"vThunder_5_3_0-TPS-SP4_17",
          "metadata":{
             "description":"Choose the A10 vTPS image that is right for you and your customers. Navigate to Azure Portal -> Marketplace -> TPS -> Usage Information -> Plan ID is the image ID. For more information please refer https://github.com/a10networks/A10-azure-arm-templates"
          }
@@ -18,7 +18,7 @@
       },
       "Product":{
          "type":"string",
-         "defaultValue":"a10-vthunder-tps-2",
+         "defaultValue":"a10-vthunder-tps",
          "metadata":{
             "description":"Choose the A10 vTPS image that is right for you and your customers. Navigate to Azure Portal -> Marketplace -> TPS -> Product ID. For more information please refer https://github.com/a10networks/A10-azure-arm-templates"
          }
@@ -221,7 +221,7 @@
       "workspaceName":"[concat(parameters('Log Analytics Workspace'), '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
       "workspaceSku":"pergb2018",
       "appInsightsName":"[concat(parameters('App Insights'), '-', substring(uniqueString(resourceGroup().name, deployment().name),0, 6))]",
-      "_artifactsLocation":"https://raw.githubusercontent.com/dlohia-a10/a10-azure-arm-templates/main/A10-vThunder_vTPS-3NIC-VMSS-GWLB/A10-vThunder_vTPS-3NIC-VMSS-GWLB.json",
+      "_artifactsLocation":"https://raw.githubusercontent.com/dlohia-a10/a10-azure-arm-templates/FEATURE/A10-vThunder_vTPS-3NIC-VMSS-GWLB/A10-vThunder_vTPS-3NIC-VMSS-GWLB/A10-vThunder_vTPS-3NIC-VMSS-GWLB.json",
       "vTPSAutoScaleSetting": "[concat('AutoscaleSetting-', substring(uniqueString(resourceGroup().name, deployment().name),0,6))]",
       "location": "[resourceGroup().location]",
       "WebhookExpiryTime": "2023-09-21T19:03:27.494+00:00",
@@ -544,11 +544,11 @@
             "tier":"Standard",
             "capacity":"[parameters('VMSS Instance Count')]"
          },
-         "plan":{
-            "name":"[parameters('Image')]",
-            "product":"[parameters('Product')]",
-            "publisher":"[parameters('Publisher')]"
-         },
+         // "plan":{
+         //    "name":"[parameters('Image')]",
+         //    "product":"[parameters('Product')]",
+         //    "publisher":"[parameters('Publisher')]"
+         // },
          "dependsOn":[
             "[resourceId('Microsoft.Network/loadBalancers', variables('lbName'))]",
             "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
@@ -573,10 +573,11 @@
                      "diskSizeGB":30
                   },
                   "imageReference":{
-                     "publisher":"[parameters('Publisher')]",
-                     "offer":"[parameters('Product')]",
-                     "sku":"[parameters('Image')]",
-                     "version":"latest"
+                     "id": "/subscriptions/07d34b9b-61e3-475a-abbc-006b16812a3e/resourceGroups/Ignite_Work/providers/Microsoft.Compute/images/vThunder_5_3_0-TPS-SP4_17"
+                     // "publisher":"[parameters('Publisher')]",
+                     // "offer":"[parameters('Product')]",
+                     // "sku":"[parameters('Image')]",
+                     // "version":"latest"
                   }
                },
                "osProfile":{
