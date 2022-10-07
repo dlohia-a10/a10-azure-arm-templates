@@ -717,7 +717,7 @@ function ConfigvTPS {
 
     SystemDDOS -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken
 
-    # LifRoute -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken
+    LifRoute -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken
 
     return "vTPS Configuration Applied"
 }
@@ -884,8 +884,8 @@ for($i = 0; $i -lt $pubIpList.Count; $i++){
                     continue
                 }
                 ConfigvTPS -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -mgmtNextHop $mgmtNextHop -eth1NextHop $eth1NextHop -gwlbPvtIP $gwlbPvtIP -pubLBPubIP $pubLBPubIP
-                # # get and save log analytics information in vthunder instance
-                # InsertLogAnalyticsInfo -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -vmName $vmName -vmId $vmID -resourceGroupName $resourceGroupName -publicIp $vTPSPubIP -vmssName $vTPSScaleSetName -customerId $customerId -primarySharedKey $primarySharedKey
+                # get and save log analytics information in vthunder instance
+                InsertLogAnalyticsInfo -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken -vmName $vmName -vmId $vmID -resourceGroupName $resourceGroupName -publicIp $vTPSPubIP -vmssName $vTPSScaleSetName -customerId $customerId -primarySharedKey $primarySharedKey
                 # save configurations
                 WriteMemory -vthunderBaseUrl $BaseUrl -AuthorizationToken $AuthorizationToken
                 # reboot vtps instance
