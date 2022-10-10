@@ -1,0 +1,976 @@
+{
+    "$schema":"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion":"1.0.0.0",
+    "parameters":{
+       "Image":{
+          "type":"string",
+          "defaultValue":"vthunder-tps-byol",
+          "metadata":{
+             "description":"Choose the A10 vTPS image that is right for you and your customers. Navigate to Azure Portal -> Marketplace -> TPS -> Usage Information -> Plan ID is the image ID. For more information please refer https://github.com/a10networks/A10-azure-arm-templates"
+          }
+       },
+       "Publisher":{
+          "type":"string",
+          "defaultValue":"a10networks",
+          "metadata":{
+             "description":"Choose the A10 vTPS image that is right for you and your customers. Navigate to Azure Portal -> Marketplace -> TPS -> Publisher ID. For more information please refer https://github.com/a10networks/A10-azure-arm-templates"
+          }
+       },
+       "Product":{
+          "type":"string",
+          "defaultValue":"a10-vthunder-tps-2-preview",
+          "metadata":{
+             "description":"Choose the A10 vTPS image that is right for you and your customers. Navigate to Azure Portal -> Marketplace -> TPS -> Product ID. For more information please refer https://github.com/a10networks/A10-azure-arm-templates"
+          }
+       },
+       "Instance Size":{
+          "type":"string",
+          "defaultValue":"Standard_Ds3_v2",
+          "metadata":{
+             "description":"Choose the VM instance size which is compatible for selected vTPS image and have capacity to enable three NICs. Recommended for basic usage instance size is Standard_Ds3_v2 having 4 vCPUs and 16 GB RAM. For more information please refer https://github.com/a10networks/A10-azure-arm-templates"
+          }
+       },
+       "VNET":{
+          "type":"string",
+          "metadata":{
+             "description":"Choose the avaiable Virtual Network Name where to configure vTPS. This ARM template will not create a new virtual network."
+          }
+       },
+       "Subnet Management Name":{
+          "type":"string",
+          "metadata":{
+             "description":"Choose the available subnet name for managing vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
+          }
+       },
+       "Subnet Management":{
+          "type":"string",
+          "metadata":{
+             "description":"Choose the available subnet prefix for managing vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
+          }
+       },
+       "Subnet Data In Name":{
+          "type":"string",
+          "metadata":{
+             "description":"Choose the available subnet name for data traffic flow inward to vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
+          }
+       },
+       "Subnet Data In":{
+          "type":"string",
+          "metadata":{
+             "description":"Choose the available subnet prefix for data traffic inward to vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
+          }
+       },
+       "Subnet Data Out Name":{
+          "type":"string",
+          "metadata":{
+             "description":"Choose the available subnet name for data traffic outward from vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
+          }
+       },
+       "Subnet Data Out":{
+          "type":"string",
+          "metadata":{
+             "description":"Choose the available subnet prefix for data traffic outward from vTPS and this subnet should be available within a selected Virtual Network. This ARM template will not create a new subnet."
+          }
+       },
+       "Subnet GWLB Name":{
+          "type":"string",
+          "metadata":{
+             "description":"Specify the private gateway loadbalancer subnet name which will take traffic from public loadbalacer. ARM template will create a new gateway loadbalancer with specified name along with 6 chars unique id at the end. For eg vtps-gwlab-asd5gh."
+          }
+       },
+       "Subnet GWLB":{
+          "type":"string",
+          "metadata":{
+             "description":"Choose the available subnet prefix for gateway loadbalancer traffic which take inward traffic from public loadbalancer and sends to vTPS and this subnet should be available within a selected virtual network. This ARM template will not create a new subnet."
+          }
+       },
+       "VMSS Name":{
+          "type":"string",
+          "defaultValue":"vtps-vmss",
+          "minLength":3,
+          "maxLength":61,
+          "metadata":{
+             "description":"Specify the virtual machine scale set name under which all vTPS instances will be created. ARM template will create a new VMSS with name provided in input field and adjoin with 6 chars unique id at the end. For eg vtps-vmss-asd5gh. VMSS name will be configured as VMSS DNS prefix name."
+          }
+       },
+       "VMSS Instance Count":{
+          "type":"int",
+          "defaultValue":1,
+          "minValue":1,
+          "maxValue":3,
+          "metadata":{
+             "description":"Specify the initial number of vTPS instances to be created in VMSS. ARM template will create and configure number of instance count provided."
+          }
+       },
+       "VMSS Fault Domain":{
+          "type":"int",
+          "defaultValue":1,
+          "metadata":{
+             "description":"Specify the fault domain count. FD=1 in this case implies that the VM instances belonging to the scale set will be spread across many racks on a best effort basis. For more information please refer https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-manage-fault-domains"
+          }
+       },
+       "VMSS Username":{
+          "type":"string",
+          "defaultValue":"Azure-User",
+          "metadata":{
+             "description":"Specify the user name for all instances created under VMSS. This credential will be used to provision vTPS instance and once instance is created this user will get auto deleted. User can login with default user=admin and password=a10"
+          }
+       },
+       "VMSS Password":{
+          "type":"securestring",
+          "metadata":{
+             "description":"Specify the password for all instances created under VMSS. This credential will be used to provision vTPS instance and once instance is created this user will get auto deleted. User can login with default user=admin and password=a10"
+          }
+       },
+       "VMSS Email Notification":{
+          "type": "string",
+          "defaultValue":"example1@a10networks.com,example2@a10networks.com",
+          "metadata":{
+             "description":"Specify comma delimited emails for VMSS autoscale notifications."
+          }
+       },
+       "Automation Account": {
+          "type": "string",
+          "defaultValue":"vtps-amt",
+          "metadata": {
+          "description": "Specify the automation account name which will configure all vTPS instances as per runbook configuration. ARM template will create a new automation account with name provided in input field and adjoin with 6 chars unique id at the end. For eg vtps-amt-asd5gh."
+          }
+       },
+       "Automation Job GUID": {
+          "type": "string",
+          "defaultValue":"[newGuid()]",
+          "metadata":{
+             "description": "This is autogenerated field, no need to change. ARM will use this function to generate unique job ids for automation job."
+          }
+       },
+       "GWLB Name": {
+          "type": "string",
+          "defaultValue":"vtps-gwlb",
+          "minLength": 3,
+          "maxLength": 61,
+          "metadata": {
+             "description": "Specify the gateway loadbalancer name which will take traffic from public load balancer and send to vTPS instances. ARM template will create a new gateway load balacer with name provided in input field and adjoin with 6 chars unique id at the end. For eg vtps-gwlb-asd5gh."
+          }
+       },
+       "Public LB Frontend IP": {
+          "type": "string",
+          "metadata": {
+             "description": "Choose Public facing load balancer frontend ip address which will send traffic to private gateway load balancer and private gateway load balancer will send traffic to vTPS instances. Can not be wild card entry or net mask entry."
+          }
+       },
+       "Log Analytics Workspace":{
+          "type":"string",
+          "defaultValue":"vtps-log-analytics-workspace",
+          "metadata":{
+             "description":"Specify the log analytics workspace name where vTPS instances will send all logs information. ARM template will create a new log analytics workspace with name provided in input field and adjoin with 6 chars unique id at the end. For eg vtps-log-analytics-workspace-asd5gh."
+          }
+       },
+       "App Insights":{
+          "type":"string",
+          "defaultValue":"vtps-app-insights",
+          "metadata":{
+             "description":"Specify the application insights name where vTPS instances will send all metrics information. ARM template will create a new application insights with name provided in input field and adjoin with 6 chars unique id at the end. For eg vtps-app-insights-asd5gh."
+          }
+       },
+       "Client ID": {
+          "type": "string",
+          "metadata": {
+          "description": "Choose Service app cliend id from Azure Portal -> Azure Active Directory -> App registrations -> Owned applications -> your-app -> overview -> Application (client) ID, for more information please refer https://github.com/a10networks/A10-azure-arm-templates"
+          }
+       },
+       "clientSecret": {
+          "type": "securestring",
+          "metadata": {
+          "description": "Choose Service app cliend id from Azure Portal -> Azure Active Directory -> App registrations -> Owned applications -> your-app -> Certificates & secrets -> Client secrets, for more information please refer https://github.com/a10networks/A10-azure-arm-templates"
+          }
+       },
+       "Tenant ID": {
+          "type": "string",
+          "metadata": {
+          "description": "Choose tenant id for your subscription. get it from Azure Potal -> Azure Active Directory -> App registrations -> Owned applications -> your-app -> overview -> Directory (tenant) ID, for more information please refer https://github.com/a10networks/A10-azure-arm-templates"
+          }
+       }
+    },
+    "variables":{
+       "addressPrefix":"10.0.0.0/16",
+       "subnet1Prefix":"[parameters('Subnet Management')]",
+       "subnet2Prefix":"[parameters('Subnet Data In')]",
+       "subnet3Prefix":"[parameters('Subnet Data Out')]",
+       "subnet4Prefix":"[parameters('Subnet GWLB')]",
+       "virtualNetworkName":"[parameters('VNET')]",
+       "networkSecurityGroupMgmtIntName":"vtps-vmss-nsg-mgmt",
+       "networkSecurityGroupDataIntName": "vtps-vmss-nsg-data",
+       "subnet1Name":"[parameters('Subnet Management Name')]",
+       "subnet2Name":"[parameters('Subnet Data In Name')]",
+       "subnet3Name":"[parameters('Subnet Data Out Name')]",
+       "subnet4Name":"[parameters('Subnet GWLB Name')]",
+       "nic1Name":"vtps-vmss-nic1-mgmt",
+       "nic2Name":"vtps-vmss-nic2-data",
+       "nic3Name":"vtps-vmss-nic3-data",
+       "ipConfig1Name":"[concat(variables('nic1Name'), '-ip')]",
+       "ipConfig2Name":"[concat(variables('nic2Name'), '-ip')]",
+       "ipConfig3Name":"[concat(variables('nic3Name'), '-ip')]",
+       "lbName": "[concat(parameters('GWLB Name'), '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
+       "lbInternalBPName": "vtps-gwlb-backpool-internal",
+       "lbExternalBPName": "vtps-gwlb-backpool-externl",
+       "lbFrontendIPConfigID": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations',variables('lbName'), variables('Gwlb Frontend Ip Name'))]",
+       "lbInternalBackendPoolID": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools',variables('lbName'), variables('lbInternalBPName'))]",
+       "lbExternalBackendPoolID": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools',variables('lbName'), variables('lbExternalBPName'))]",
+       "lbHealthProbe80Name": "HealthProbe80",
+       "lbHealthProbe80ID": "[resourceId('Microsoft.Network/loadBalancers/probes',variables('lbName'), variables('lbHealthProbe80Name'))]",
+       "workspaceName":"[concat(parameters('Log Analytics Workspace'), '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
+       "workspaceSku":"pergb2018",
+       "appInsightsName":"[concat(parameters('App Insights'), '-', substring(uniqueString(resourceGroup().name, deployment().name),0, 6))]",
+       "_artifactsLocation":"https://raw.githubusercontent.com/dlohia-a10/a10-azure-arm-templates/main/A10-vThunder_vTPS-3NIC-VMSS-GWLB/A10-vThunder_vTPS-3NIC-VMSS-GWLB.json",
+       "vTPSAutoScaleSetting": "[concat('AutoscaleSetting-', substring(uniqueString(resourceGroup().name, deployment().name),0,6))]",
+       "location": "[resourceGroup().location]",
+       "WebhookExpiryTime": "2023-09-21T19:03:27.494+00:00",
+       "webhookName": "vtps-config-webhook",
+       "_artifactsLocationSasToken": "",
+       "PowerShellRunbookDescription": "Runbook to apply default vTps configuration on all vmss instances.",
+       "PowerShellRunbookName": "vtps-config",
+       "Gwlb Frontend Ip Name": "[concat('vtps-gwlb-frontend-ip-', uniqueString(resourceGroup().name))]",
+       "nic1PublicIPName": "[concat('vtps-vmss-public-ip-', resourceGroup().name)]",
+       "virtualNetworkNewOrExisting": "existing",
+       "VmssSinglePlacementGroup": true,
+       "Vmss Name": "[concat(replace(parameters('VMSS Name'), '_', '-'), '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
+       "Vmss Dns": "[replace(variables('Vmss Name'), '_', '-')]",
+       "Automation Account": "[concat(parameters('Automation Account'), '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
+       "vTPSUserName": "admin",
+       "vTPSPassword": "a10",
+       "VMSS Email Notification": "[split(replace(parameters('VMSS Email Notification'), ' ', ''), ',')]",
+       "natGatewayName": "[concat('vtps-nat-gateway', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
+       "publicIPNATName": "[concat('nat-public-ip', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
+       "publicIPPrefixName": "[concat('nat-public-ip-prefix', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]"
+    },
+    "resources":[
+       {
+          "apiVersion": "2017-03-15-preview",
+          "name": "[variables('workspaceName')]",
+          "location": "[variables('location')]",
+          "type": "Microsoft.OperationalInsights/workspaces",
+          "properties": {
+              "sku": {
+                  "name": "[variables('workspaceSku')]"
+              }
+          }
+       },
+       {
+             "name": "[variables('appInsightsName')]",
+             "type": "microsoft.insights/components",
+             "location": "[variables('location')]",
+             "apiVersion": "2020-02-02-preview",
+             "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
+             ],
+             "properties": {
+                 "ApplicationId": "[variables('appInsightsName')]",
+                 "Application_Type": "web",
+                 "Flow_Type": "Redfield",
+                 "Request_Source": "IbizaAIExtension",
+                 "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
+             }
+       },
+       {
+             "type": "Microsoft.Network/loadBalancers",
+             "apiVersion": "2021-05-01",
+             "name": "[variables('lbName')]",
+             "location": "[variables('location')]",
+             "sku": {
+                "name": "Gateway",
+                "tier": "Regional"
+             },
+             "dependsOn": [
+               "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
+             ],
+             "properties": {
+                 "frontendIPConfigurations": [
+                     {
+                         "name": "[variables('Gwlb Frontend Ip Name')]",
+                         "properties": {
+                           "privateIPAddress": null,
+                           "privateIPAddressVersion": "IPv4",
+                           "privateIPAllocationMethod": "Dynamic",
+                           "subnet": {
+                                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnet4Name'))]"
+                             }
+                         }
+                     }
+                 ],
+                 "backendAddressPools": [
+                     {
+                         "name": "vtps-gwlb-backpool-internal",
+                         "properties": {
+                             "tunnelInterfaces": [
+                                 {
+                                     "port": 10800,
+                                     "identifier": 800,
+                                     "protocol": "VXLAN",
+                                     "type": "Internal"
+                                 }
+                             ]
+                         }
+                     },
+                     {
+                         "name": "vtps-gwlb-backpool-externl",
+                         "properties": {
+                             "tunnelInterfaces": [
+                                 {
+                                     "port": 10801,
+                                     "identifier": 801,
+                                     "protocol": "VXLAN",
+                                     "type": "External"
+                                 }
+                             ]
+                         }
+                     }
+                 ],
+                 "probes": [
+                    {
+                       "name": "[variables('lbHealthProbe80Name')]",
+                       "properties": {
+                          "protocol": "Http",
+                          "port": 80,
+                          "requestPath": "/",
+                          "intervalInSeconds": 5,
+                          "numberOfProbes": 2
+                       }
+                    }
+                 ],
+                 "loadBalancingRules": [
+                     {
+                         "name": "ruleToTPS",
+                         "properties": {
+                             "frontendIPConfiguration": {
+                                 "id": "[variables('lbFrontendIPConfigID')]"
+                             },
+                             "frontendPort": 0,
+                             "backendPort": 0,
+                             "enableFloatingIP": false,
+                             "protocol": "All",
+                             "idleTimeoutInMinutes": 4,
+                             "loadDistribution": "Default",
+                             "probe": {
+                                 "id": "[variables('lbHealthProbe80ID')]"
+                             },
+                             "disableOutboundSnat": true,
+                             "enableTcpReset": false,
+                             "backendAddressPools": [
+                               {"id": "[variables('lbInternalBackendPoolID')]"},
+                               {"id": "[variables('lbExternalBackendPoolID')]"}
+                             ]
+                         }
+                     }
+                 ],
+                 "inboundNatRules": [],
+                 "outboundRules": []
+             }
+         },
+       {
+          "type":"Microsoft.Network/networkSecurityGroups",
+          "apiVersion":"2015-06-15",
+          "name":"[variables('networkSecurityGroupDataIntName')]",
+          "location":"[resourceGroup().location]",
+          "properties":{}
+       },
+       {
+          "type":"Microsoft.Network/networkSecurityGroups",
+          "apiVersion":"2015-06-15",
+          "name":"[variables('networkSecurityGroupMgmtIntName')]",
+          "location":"[resourceGroup().location]",
+          "properties":{
+             "securityRules":[
+                {
+                   "name":"ssh",
+                   "properties":{
+                      "description":"ssh-rule",
+                      "protocol":"Tcp",
+                      "sourcePortRange":"*",
+                      "destinationPortRange":"22",
+                      "sourceAddressPrefix":"0.0.0.0/0",
+                      "destinationAddressPrefix":"*",
+                      "access":"Allow",
+                      "priority":1000,
+                      "direction":"Inbound",
+                      "sourcePortRanges":[],
+                      "destinationPortRanges":[],
+                      "sourceAddressPrefixes":[],
+                      "destinationAddressPrefixes":[]
+                   }
+                },
+                {
+                   "name":"https",
+                   "properties":{
+                      "description":"https-rule",
+                      "protocol":"Tcp",
+                      "sourcePortRange":"*",
+                      "destinationPortRange":"443",
+                      "sourceAddressPrefix":"*",
+                      "destinationAddressPrefix":"*",
+                      "access":"Allow",
+                      "priority":1010,
+                      "direction":"Inbound",
+                      "sourcePortRanges":[],
+                      "destinationPortRanges":[],
+                      "sourceAddressPrefixes":[],
+                      "destinationAddressPrefixes":[]
+                   }
+                },
+                {
+                   "name":"http",
+                   "properties":{
+                      "description":"http-rule",
+                      "protocol":"Tcp",
+                      "sourcePortRange":"*",
+                      "destinationPortRange":"80",
+                      "sourceAddressPrefix":"*",
+                      "destinationAddressPrefix":"*",
+                      "access":"Allow",
+                      "priority":1020,
+                      "direction":"Inbound",
+                      "sourcePortRanges":[],
+                      "destinationPortRanges":[],
+                      "sourceAddressPrefixes":[],
+                      "destinationAddressPrefixes":[]
+                   }
+                }
+             ]
+          }
+       },
+       {
+          "condition": "[equals(variables('virtualNetworkNewOrExisting'), 'new')]",
+          "type":"Microsoft.Network/virtualNetworks",
+          "apiVersion":"2020-06-01",
+          "name":"[variables('virtualNetworkName')]",
+          "location":"[variables('location')]",
+          "properties":{
+             "addressSpace":{
+                "addressPrefixes":[
+                   "[variables('addressPrefix')]"
+                ]
+             },
+             "subnets":[
+                {
+                   "name":"[variables('subnet1Name')]",
+                   "properties":{
+                      "addressPrefix":"[variables('subnet1Prefix')]"
+                   }
+                },
+                {
+                   "name":"[variables('subnet2Name')]",
+                   "properties":{
+                      "addressPrefix":"[variables('subnet2Prefix')]"
+                   }
+                },
+                {
+                   "name":"[variables('subnet3Name')]",
+                   "properties":{
+                      "addressPrefix":"[variables('subnet3Prefix')]"
+                   }
+                },
+                {
+                   "name":"[variables('subnet4Name')]",
+                   "properties":{
+                      "addressPrefix":"[variables('subnet4Prefix')]"
+                   }
+                }
+             ]
+          },
+           "dependsOn":[
+             "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupMgmtIntName'))]",
+             "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupDataIntName'))]"
+          ]
+       },
+       {
+          "type": "Microsoft.Network/publicIPAddresses",
+          "apiVersion": "2021-05-01",
+          "name": "[variables('publicIPNATName')]",
+          "location": "[variables('location')]",
+          "sku": {
+             "name": "Standard"
+          },
+          "properties": {
+          "publicIPAddressVersion": "IPv4",
+          "publicIPAllocationMethod": "Static",
+          "idleTimeoutInMinutes": 4
+          }
+       },
+       {
+          "type": "Microsoft.Network/publicIPPrefixes",
+          "apiVersion": "2021-05-01",
+          "name": "[variables('publicIPPrefixName')]",
+          "location": "[variables('location')]",
+          "sku": {
+             "name": "Standard"
+          },
+          "properties": {
+          "prefixLength": 31,
+          "publicIPAddressVersion": "IPv4"
+          }
+       },
+       {
+          "type": "Microsoft.Network/natGateways",
+          "apiVersion": "2021-05-01",
+          "name": "[variables('natGatewayName')]",
+          "location": "[variables('location')]",
+          "sku": {
+             "name": "Standard"
+          },
+          "properties": {
+             "idleTimeoutInMinutes": 4,
+             "publicIpAddresses": [
+                {
+                   "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPNATName'))]"
+                }
+             ],
+             "publicIpPrefixes": [
+                {
+                   "id": "[resourceId('Microsoft.Network/publicIPPrefixes', variables('publicIPPrefixName'))]"
+                }
+             ]
+          },
+          "dependsOn": [
+             "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPNATName'))]",
+             "[resourceId('Microsoft.Network/publicIPPrefixes', variables('publicIPPrefixName'))]"
+          ]
+       },
+       {
+          "type":"Microsoft.Compute/virtualMachineScaleSets",
+          "apiVersion":"2020-06-01",
+          "name":"[variables('Vmss Name')]",
+          "location":"[variables('location')]",
+          "sku":{
+             "name":"[parameters('Instance Size')]",
+             "tier":"Standard",
+             "capacity":"[parameters('VMSS Instance Count')]"
+          },
+          "plan":{
+             "name":"[parameters('Image')]",
+             "product":"[parameters('Product')]",
+             "publisher":"[parameters('Publisher')]"
+          },
+          "dependsOn":[
+             "[resourceId('Microsoft.Network/loadBalancers', variables('lbName'))]",
+             "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+             "[resourceId('Microsoft.Automation/automationAccounts', variables('Automation Account'))]"
+          ],
+          "properties":{
+             "overprovision":false,
+             "upgradePolicy":{
+                "mode":"Automatic"
+             },
+             "singlePlacementGroup":"[variables('VmssSinglePlacementGroup')]",
+             "platformFaultDomainCount":"[parameters('VMSS Fault Domain')]",
+             "virtualMachineProfile":{
+                "storageProfile":{
+                   "osDisk":{
+                      "osType":"Linux",
+                      "createOption":"FromImage",
+                      "caching":"ReadWrite",
+                      "managedDisk":{
+                         "storageAccountType":"Standard_LRS"
+                      },
+                      "diskSizeGB":30
+                   },
+                   "imageReference":{
+                      "publisher":"[parameters('Publisher')]",
+                      "offer":"[parameters('Product')]",
+                      "sku":"[parameters('Image')]",
+                      "version":"latest"
+                   }
+                },
+                "osProfile":{
+                   "computerNamePrefix":"[variables('Vmss Name')]",
+                   "adminUsername":"[parameters('VMSS Username')]",
+                   "adminPassword":"[parameters('VMSS Password')]"
+                },
+                "networkProfile":{
+                   "networkInterfaceConfigurations":[
+                      {
+                         "name":"[variables('nic1Name')]",
+                         "properties":{
+                            "primary":true,
+                            "ipConfigurations":[
+                               {
+                                  "name":"[variables('ipConfig1Name')]",
+                                  "properties":{
+                                     "subnet":{
+                                        "id":"[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnet1Name'))]"
+                                     },
+                                     "publicipaddressconfiguration":{
+                                        "name":"[variables('nic1PublicIPName')]",
+                                        "properties":{
+                                           "dnsSettings":{
+                                              "domainNameLabel":"[variables('Vmss Dns')]"
+                                           },
+                                           "idleTimeoutInMinutes":15
+                                        }
+                                     }
+                                  }
+                               }
+                            ],
+                             "networkSecurityGroup":{
+                               "id":"[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupMgmtIntName'))]"
+                             }
+                         }
+                      },
+                      {
+                         "name":"[variables('nic2Name')]",
+                         "properties":{
+                            "primary":false,
+                            "enableAcceleratedNetworking":true,
+                            "enableIPForwarding": true,
+                            "ipConfigurations":[
+                               {
+                                  "name":"[variables('ipConfig2Name')]",
+                                  "properties":{
+                                     "subnet":{
+                                        "id":"[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnet2Name'))]"
+                                     },
+                                     "loadBalancerBackendAddressPools": [
+                                       {
+                                         "id": "[variables('lbInternalBackendPoolID')]"
+                                       }
+                                     ]
+                                  }
+                               }
+                            ],
+                            "networkSecurityGroup":{
+                               "id":"[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupDataIntName'))]"
+                             }
+                         }
+                      },
+                      {
+                         "name":"[variables('nic3Name')]",
+                         "properties":{
+                            "primary":false,
+                            "enableAcceleratedNetworking":true,
+                            "enableIPForwarding": true,
+                            "ipConfigurations":[
+                               {
+                                  "name":"[variables('ipConfig3Name')]",
+                                  "properties":{
+                                     "subnet":{
+                                        "id":"[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnet3Name'))]"
+                                     },
+                                    "loadBalancerBackendAddressPools": [
+                                       {
+                                         "id": "[variables('lbExternalBackendPoolID')]"
+                                       }
+                                     ]
+                                  }
+                               }
+                            ],
+                            "networkSecurityGroup":{
+                               "id":"[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupDataIntName'))]"
+                             }
+                         }
+                      }
+                   ]
+                }
+             }
+          }
+       },
+       {
+          "type": "Microsoft.Insights/autoscalesettings",
+          "apiVersion": "2015-04-01",
+          "name": "[variables('vTPSAutoScaleSetting')]",
+          "location": "[variables('location')]",
+          "dependsOn":[
+             "[resourceId('Microsoft.Compute/virtualMachineScaleSets', variables('Vmss Name'))]",
+             "[resourceId('Microsoft.Automation/automationAccounts', variables('Automation Account'))]"
+          ],
+          "properties": {
+             "enabled": true,
+             "name": "[variables('vTPSAutoScaleSetting')]",
+             "notifications": [
+                {
+                "email": {
+                   "customEmails": "[variables('VMSS Email Notification')]",
+                   "sendToSubscriptionAdministrator": false,
+                   "sendToSubscriptionCoAdministrators": false
+                },
+                "operation": "Scale",
+                "webhooks": [
+                      {
+                         "properties": {},
+                         "serviceUri": "[reference(variables('webhookName')).uri]"
+                      }
+                   ]
+                }
+             ],
+             "profiles": [
+                {
+                   "name": "Auto created default scale condition",
+                   "capacity": {
+                         "minimum": "1",
+                         "maximum": "8",
+                         "default": "[parameters('VMSS Instance Count')]"
+                   },
+                   "rules": []
+                }
+             ],
+             "targetResourceLocation": "[variables('location')]",
+             "targetResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', variables('Vmss Name'))]"
+          }
+          },
+       {
+       "type": "Microsoft.Automation/automationAccounts",
+       "apiVersion": "2020-01-13-preview",
+       "name": "[variables('Automation Account')]",
+       "location": "[variables('location')]",
+       "dependsOn": [
+         "[variables('workspaceName')]"
+       ],
+       "identity": {
+         "type": "SystemAssigned"
+       },
+       "properties": {
+         "sku": {
+           "name": "Basic"
+         }
+       },
+       "resources": [
+         {
+           "type": "runbooks",
+           "apiVersion": "2020-01-13-preview",
+           "name": "[variables('PowerShellRunbookName')]",
+           "location": "[variables('location')]",
+           "dependsOn": [
+             "[variables('Automation Account')]"
+           ],
+           "properties": {
+             "runbookType": "PowerShell",
+             "logProgress": "false",
+             "logVerbose": "false",
+             "description": "[variables('PowerShellRunbookDescription')]",
+             "publishContentLink": {
+               "uri": "[uri(variables('_artifactsLocation'), concat('scripts/A10-vThunder_vTPS-3NIC-VMSS-GWLB.ps1', variables('_artifactsLocationSasToken')))]",
+               "version": "1.0.0.0"
+             }
+           }
+         },
+         {
+             "type": "variables",
+             "apiVersion": "2015-10-31",
+             "name": "appId",
+             "dependsOn": [
+                   "[variables('Automation Account')]"
+             ],
+             "properties": {
+                "description": "service app application/client id",
+                "isEncrypted": false,
+                "value": "[concat('\"', parameters('Client ID'), '\"')]"
+             }
+          },
+          {
+             "type": "variables",
+             "apiVersion": "2015-10-31",
+             "name": "secret",
+             "dependsOn": [
+                   "[variables('Automation Account')]"
+             ],
+             "properties": {
+                "description": "service app secret key",
+                "isEncrypted": true,
+                "value": "[concat('\"', parameters('clientSecret'), '\"')]"
+             }
+          },
+          {
+             "type": "variables",
+             "apiVersion": "2015-10-31",
+             "name": "tenantId",
+             "dependsOn": [
+                   "[variables('Automation Account')]"
+             ],
+             "properties": {
+                "description": "service app tenant id",
+                "isEncrypted": false,
+                "value": "[concat('\"', parameters('Tenant ID'), '\"')]"
+             }
+          },
+          {
+             "type": "variables",
+             "apiVersion": "2015-10-31",
+             "name": "pubLBPubIP",
+             "dependsOn": [
+                   "[variables('Automation Account')]"
+             ],
+             "properties": {
+                "description": "Public facing loadbalancer frontend ip",
+                "isEncrypted": false,
+                "value": "[concat('\"', parameters('Public LB Frontend IP'), '\"')]"
+             }
+          },
+          {
+             "type": "variables",
+             "apiVersion": "2015-10-31",
+             "name": "resourceGroupName",
+             "dependsOn": [
+                   "[variables('Automation Account')]"
+             ],
+             "properties": {
+                "description": "Resource group name",
+                "isEncrypted": false,
+                "value": "[concat('\"', resourceGroup().name, '\"')]"
+             }
+          },
+          {
+             "type": "variables",
+             "apiVersion": "2015-10-31",
+             "name": "vTPSScaleSetName",
+             "dependsOn": [
+                   "[variables('Automation Account')]"
+             ],
+             "properties": {
+                "description": "vTPS scaleset name",
+                "isEncrypted": false,
+                "value": "[concat('\"', variables('Vmss Name'), '\"')]"
+             }
+          },
+          {
+             "type": "variables",
+             "apiVersion": "2015-10-31",
+             "name": "vTPSPubIPList",
+             "dependsOn": [
+                   "[variables('Automation Account')]"
+             ],
+             "properties": {
+                "description": "Configured vTPS public ip list",
+                "isEncrypted": false,
+                "value": "\"ip\""
+             }
+          },
+          {
+             "type": "variables",
+             "apiVersion": "2015-10-31",
+             "name": "gwLBName",
+             "dependsOn": [
+                   "[variables('Automation Account')]"
+             ],
+             "properties": {
+                "description": "Gateway loadbalancer name",
+                "isEncrypted": false,
+                "value": "[concat('\"', variables('lbName'), '\"')]"
+             }
+          },
+          {
+             "type": "variables",
+             "apiVersion": "2015-10-31",
+             "name": "vNetName",
+             "dependsOn": [
+                   "[variables('Automation Account')]"
+             ],
+             "properties": {
+                "description": "Virtual Network name",
+                "isEncrypted": false,
+                "value": "[concat('\"', parameters('VNET'), '\"')]"
+             }
+          },
+          {
+             "type": "variables",
+             "apiVersion": "2015-10-31",
+             "name": "mgmtSubnetName",
+             "dependsOn": [
+                   "[variables('Automation Account')]"
+             ],
+             "properties": {
+                "description": "Virtual Network management subnet name",
+                "isEncrypted": false,
+                "value": "[concat('\"', parameters('Subnet Management Name'), '\"')]"
+             }
+          },
+          {
+             "type": "variables",
+             "apiVersion": "2015-10-31",
+             "name": "eth1SubnetName",
+             "dependsOn": [
+                   "[variables('Automation Account')]"
+             ],
+             "properties": {
+                "description": "Data subnet 1 name",
+                "isEncrypted": false,
+                "value": "[concat('\"', parameters('Subnet Data In Name'), '\"')]"
+             }
+          },
+          {
+             "type": "variables",
+             "apiVersion": "2015-10-31",
+             "name": "vTPSUserName",
+             "dependsOn": [
+                   "[variables('Automation Account')]"
+             ],
+             "properties": {
+                "description": "vTPS default username",
+                "isEncrypted": false,
+                "value": "[concat('\"', variables('vTPSUserName'), '\"')]"
+             }
+          },
+          {
+             "type": "variables",
+             "apiVersion": "2015-10-31",
+             "name": "vTPSPassword",
+             "dependsOn": [
+                   "[variables('Automation Account')]"
+             ],
+             "properties": {
+                "description": "vTPS default password",
+                "isEncrypted": true,
+                "value": "[concat('\"', variables('vTPSPassword'), '\"')]"
+             }
+          },
+          {
+             "type": "webhooks",
+             "apiVersion": "2015-10-31",
+             "name": "[variables('webhookName')]",
+             "dependsOn": [
+                 "[concat('Microsoft.Automation/automationAccounts/', variables('Automation Account'))]",
+                   "[concat('Microsoft.Automation/automationAccounts/', variables('Automation Account'), '/runbooks/', variables('PowerShellRunbookName'))]"
+             ],
+             "properties": {
+                 "isEnabled": true,
+                 "expiryTime": "[variables('WebhookExpiryTime')]",
+                 "runbook": {
+                     "name": "[variables('PowerShellRunbookName')]"
+                 }
+             }
+         },
+         {
+             "type": "jobs",
+             "apiVersion": "2015-10-31",
+             "name": "[parameters('Automation Job GUID')]",
+             "dependsOn": [
+                   "[resourceId('Microsoft.Compute/virtualMachineScaleSets', variables('Vmss Name'))]",
+                   "[concat('Microsoft.Automation/automationAccounts/', variables('Automation Account'))]",
+                   "[concat('Microsoft.Automation/automationAccounts/', variables('Automation Account'), '/runbooks/', variables('PowerShellRunbookName'))]"
+                ],
+             "properties": {
+                "parameters": {},
+                "runbook": {
+                   "name": "[variables('PowerShellRunbookName')]"
+                }
+             }
+          }
+       ]
+     },
+     {
+       "type": "Microsoft.OperationalInsights/workspaces/linkedServices",
+       "apiVersion": "2020-08-01",
+       "name": "[concat(variables('workspaceName'), '/' , 'Automation')]",
+       "location": "[variables('location')]",
+       "dependsOn": [
+         "[variables('workspaceName')]",
+         "[variables('Automation Account')]"
+       ],
+       "properties": {
+         "resourceId": "[resourceId('Microsoft.Automation/automationAccounts', variables('Automation Account'))]"
+       }
+     }
+    ],
+    "outputs": {
+          "webhookUri": {
+              "type": "String",
+              "value": "[reference(variables('webhookName')).uri]"
+          }
+      }
+ }
