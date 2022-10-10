@@ -4,7 +4,7 @@
     "parameters":{
        "Image":{
           "type":"string",
-          "defaultValue":"vthunder-tps-byol",
+          "defaultValue":"a10-thunder-tps-ignite22-plan",
           "metadata":{
              "description":"Choose the A10 vTPS image that is right for you and your customers. Navigate to Azure Portal -> Marketplace -> TPS -> Usage Information -> Plan ID is the image ID. For more information please refer https://github.com/a10networks/A10-azure-arm-templates"
           }
@@ -18,7 +18,7 @@
        },
        "Product":{
           "type":"string",
-          "defaultValue":"a10-vthunder-tps-2-preview",
+          "defaultValue":"a10-vthunder-tps-ignite22",
           "metadata":{
              "description":"Choose the A10 vTPS image that is right for you and your customers. Navigate to Azure Portal -> Marketplace -> TPS -> Product ID. For more information please refer https://github.com/a10networks/A10-azure-arm-templates"
           }

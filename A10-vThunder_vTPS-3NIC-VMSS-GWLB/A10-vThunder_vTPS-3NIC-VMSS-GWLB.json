@@ -240,8 +240,8 @@
       "vTPSPassword": "a10",
       "VMSS Email Notification": "[split(replace(parameters('VMSS Email Notification'), ' ', ''), ',')]",
       "natGatewayName": "[concat('vtps-nat-gateway', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
-      "publicIPNATName": "[concat('NATPubIP', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
-      "publicIPPrefixName": "[concat('NATPubIPPrefix', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]"
+      "publicIPNATName": "[concat('nat-public-ip', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]",
+      "publicIPPrefixName": "[concat('nat-public-ip-prefix', '-', substring(uniqueString(resourceGroup().name, deployment().name), 0, 6))]"
    },
    "resources":[
       {
