@@ -555,7 +555,7 @@ function IPRouteConfig {
     `n      ]
     `n    },
     `n    {
-    `n      `"ip-dest-addr`":`"10.0.4.4`",
+    `n      `"ip-dest-addr`":`"$pubLBPubIP`",
     `n      `"ip-mask`":`"/32`",
     `n      `"ip-nexthop-ipv4`": [
     `n        {
