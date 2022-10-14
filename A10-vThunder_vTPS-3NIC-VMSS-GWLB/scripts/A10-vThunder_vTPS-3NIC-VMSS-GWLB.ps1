@@ -474,7 +474,7 @@ function OverlayTunnelVTEP {
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
     $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
-    
+
 }
 
 function DNSConfig {
@@ -491,8 +491,8 @@ function DNSConfig {
     param (
         $BaseUrl,
         $AuthorizationToken
-    ) 
-    
+    )
+
     $Url = -join($BaseUrl, "/ip/dns/primary")
     $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
     $headers.Add("Content-Type", "application/json")
@@ -504,7 +504,7 @@ function DNSConfig {
     `n  }
     `n}
     `n"
-    
+
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
     $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
     return $response
@@ -526,9 +526,10 @@ function IPRouteConfig {
         $AuthorizationToken,
         $mgmtNextHop,
         $eth1NextHop,
-        $pubLBPubIP
-    ) 
-    
+        $pubLBPubIP,
+        $gwlbPvtIP
+    )
+
     $Url = -join($BaseUrl, "/ip/route/rib")
     $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
     $headers.Add("Content-Type", "application/json")
@@ -555,7 +556,7 @@ function IPRouteConfig {
     `n      ]
     `n    },
     `n    {
-    `n      `"ip-dest-addr`":`"$pubLBPubIP`",
+    `n      `"ip-dest-addr`":`"$gwlbPvtIP`",
     `n      `"ip-mask`":`"/32`",
     `n      `"ip-nexthop-ipv4`": [
     `n        {
@@ -575,10 +576,10 @@ function IPRouteConfig {
     `n  ]
     `n}
     `n"
-    
+
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
     $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
-    
+
 }
 
 function LifRoute {
@@ -586,7 +587,7 @@ function LifRoute {
         $BaseUrl,
         $AuthorizationToken
     )
-    
+
     $Url = -join($BaseUrl, "/ip/route/source/lif")
     $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
     $headers.Add("Content-Type", "application/json")
@@ -607,7 +608,7 @@ function LifRoute {
 
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
     $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers -Body $body
-    
+
 }
 
 function SystemDDOS {
@@ -615,7 +616,7 @@ function SystemDDOS {
         $BaseUrl,
         $AuthorizationToken
     )
-    
+
     $Url = -join($BaseUrl, "/system")
     $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
     $headers.Add("Content-Type", "application/json")
@@ -648,11 +649,11 @@ function WriteMemory {
         $AuthorizationToken
     )
     $Url = -join($BaseUrl, "/write/memory")
- 
+
     $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
     $headers.Add("Content-Type", "application/json")
     $headers.Add("Authorization", -join("A10 ", $AuthorizationToken))
-    
+
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
     $response = Invoke-RestMethod -Uri $Url -Method 'POST' -Headers $headers
 
@@ -672,7 +673,7 @@ function Reboot {
         $vthunderBaseUrl,
         $AuthorizationToken
     )
-    
+
     $Url = -join($BaseUrl, "/reboot")
     $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
     $headers.Add("Content-Type", "application/json")
@@ -713,7 +714,7 @@ function ConfigvTPS {
 
     DDOSDstZone -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken -pubLBPubIP $pubLBPubIP
 
-    IPRouteConfig -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken -mgmtNextHop $mgmtNextHop -eth1NextHop $eth1NextHop -pubLBPubIP $pubLBPubIP
+    IPRouteConfig -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken -mgmtNextHop $mgmtNextHop -eth1NextHop $eth1NextHop -pubLBPubIP $pubLBPubIP -gwlbPvtIP $gwlbPvtIP
 
     SystemDDOS -BaseUrl $vthunderBaseUrl -AuthorizationToken $AuthorizationToken
 
@@ -782,7 +783,7 @@ function InsertLogAnalyticsInfo {
           "cloud-provider-list" = $cloudProviderList
           }
       }
-    
+
     $body = $body | ConvertTo-Json -Depth 6
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
     $response = Invoke-RestMethod -Uri $url -Method 'POST' -Headers $headers -Body $body
@@ -855,17 +856,17 @@ for($i = 0; $i -lt $pubIpList.Count; $i++){
     $eth2PvtIP = $eth2PvtIPList[$i]
     $vmName = $vmNameList[$i]
     $vmID = $vmIDList[$i]
-    
+
     if ($vTPSPubIP -eq ""){
         continue
     }
-    
+
     $configStatus = "true"
     if(-Not $vTPSPubIPList.Contains($vTPSPubIP)){
         Write-Output $vTPSPubIP
         $count = 0
-        $BaseUrl = -join("https://", $vTPSPubIP, "/axapi/v3")     
-        
+        $BaseUrl = -join("https://", $vTPSPubIP, "/axapi/v3")
+
         while($count -lt 15){
             $AuthorizationToken = GetAuthToken -BaseUrl $BaseUrl
             if ($null -eq $AuthorizationToken) {
